@@ -1,8 +1,8 @@
-%% ShowImage：显示部分原始图像的灰度图.
+%% test: 训练卷积神经网络.
+% 需先在cifar-10-batches-mat目录解压数据.
 
-clc;
-close all;
-delete 'CNN_s*.mat'
+clc; close all;
+
 if ~exist('Train', 'var')
     [Train, Label, Test, Tag] = Prepare;
 end
@@ -25,5 +25,5 @@ end
 clear n p S i j k;
 %}
 
-CNN = TrainCNN(Train, Label, Test, Tag, 1e-2);
+CNN = TrainCNN(Train, Label, Test, Tag, 1e-6);
 %}

@@ -17,7 +17,7 @@ if isempty(CNN)
         CNN{1}{i} = rand(5, 5) - 0.5;
     end
 
-    CNN{2} = cell(16, 7);   % C3¾í»ý²ã
+    CNN{2} = cell(16, 6);   % C3¾í»ý²ã
     for i=1:16
         for j=1:6
             CNN{2}{i, j} = rand(5, 5) - 0.5;

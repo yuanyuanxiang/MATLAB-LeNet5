@@ -27,7 +27,7 @@ lr = p * 0.99.^(0:iter); % 学习率随迭代次数衰减
 %profile clear;
 %% 开始迭代
 sy = size(Label, 1);
-num = 1000;%size(Train, 3);
+num = 200;%size(Train, 3);
 % 第一行存放误差，第二、三行存放准确率
 errs = zeros(3, iter);
 count = 0; EarlyStopping = 10; %CNN早停条件
@@ -36,7 +36,7 @@ for i = 1:iter
     tic;
     alpha = lr(i);
     % 总误差
-    total = zeros(sy, num);
+    total = zeros(1, num);
     for k = 1 : num % 遍历元素
         I = Train(:, :, k);
         % 卷积,池化 32 -> 28 -> 14
@@ -62,12 +62,12 @@ for i = 1:iter
         F1 = reLU(CNN{3} * [1; F0]);
         F2 = reLU(CNN{4} * [1; F1]);
         F3 = reLU(CNN{5} * [1; F2]);
-        % 误差
-        err = F3 - Label(:, k);
-        total(:, k) = err;
+        Out = softmax(F3);
+        % 交叉熵 Loss = -sigma(target * ln(output))
+        total(:, k) = - dot(Label(:, k), log(Out));
 
         % BP-误差反向传播
-        err3 = err .* Grad(F3);
+        err3 = (Out-Label(:, k)) .* Grad(F3);
         B3 = CNN{5} - alpha * err3 * [1; F2]';
 
         err2 = (CNN{5}(:, 2:end)' * err3) .* Grad(F2);
@@ -75,7 +75,6 @@ for i = 1:iter
 
         err1 = (CNN{4}(:, 2:end)' * err2) .* Grad(F1);
         B1 = CNN{3} - alpha * err1 * [1; F0]';
-        CNN{3} = B1; CNN{4} = B2; CNN{5} = B3;
 
         % 卷积、池化层
         err0 = reshape(CNN{3}(:, 2:end)' * err1, 5, 5, 16); % 转为矩阵
@@ -84,24 +83,25 @@ for i = 1:iter
         for n = 1:16
             bp{n} = Upsampling(err0(:,:,n)) .* Grad(C3{n});% 上采样:S4->C3
             for j = 1:6
-                grad = conv2(rot90(S2{j},2), bp{n}, 'valid'); % C3->S2
+                grad = conv2(rot180(S2{j}), bp{n}, 'valid'); % C3->S2
                 A2{n,j} = A2{n,j} - alpha * grad;
             end
         end
         for n = 1:6
             err = zeros(14, 14);
             for j = 1:16
-                err = err + conv2(bp{j}, rot90(A2{j,n},2), 'full');
+                err = err + conv2(bp{j}, rot180(A2{j,n}), 'full');
             end
             err = Upsampling(err) .* Grad(C1{n}); % 上采样:S2->C1
-            grad = conv2(rot90(I, 2), err, 'valid'); % C1->I
+            grad = conv2(rot180(I), err, 'valid'); % C1->I
             A1{n} = A1{n} - alpha * grad;
         end
+        CNN{3} = B1; CNN{4} = B2; CNN{5} = B3;
         CNN{2} = A2; CNN{1} = A1;
     end
     queue = circshift(queue, 1);
     queue{1} = CNN;
-    e = mean(sqrt(sum(total.*total)));
+    e = mean(total);
     errs(1, i) = e;
     s = Accuracy(CNN, Train, Label, num);
     t = Accuracy(CNN, Test, Tag, num);
@@ -124,3 +124,4 @@ for i = 1:iter
     fprintf('%g err=%g lr=%g acc=%g %g use %gs\n',i+start,e,alpha,s,t,toc);
 end
 %profile viewer;
+end

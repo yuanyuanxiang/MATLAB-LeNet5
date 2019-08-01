@@ -40,8 +40,9 @@ for k = 1:N
     F1 = reLU(CNN{3} * [1; F0]);
     F2 = reLU(CNN{4} * [1; F1]);
     F3 = reLU(CNN{5} * [1; F2]);
+    Out = softmax(F3);
     % softmax
-    [a, p] = max(F3);
+    [a, p] = max(Out);
     [b, tag] = max(Tag(:, k));
     r(k) = p==tag;
 end
